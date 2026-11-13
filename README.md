@@ -248,3 +248,4 @@ Estimate only; check with the AWS Pricing Calculator.
   - `![Host](docs/screenshots/host.png)`
   - `![Containers](docs/screenshots/containers.png)`
 # oidc deploy test
+# trigger workflow after vars
