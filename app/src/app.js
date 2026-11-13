@@ -46,10 +46,9 @@ app.use((req, res, next) => {
     if (res.statusCode >= 500) errorsTotal.inc({ route });
     // Do not log health checks and scrapes (too noisy)
     if (route !== '/health' && route !== '/metrics') {
-      logger.info(
-        { method: req.method, path: req.path, status: res.statusCode },
-        'request'
-      );
+      const requestLog = { method: req.method, path: req.path, status: res.statusCode };
+      if (res.statusCode >= 500) logger.error(requestLog, 'request');
+      else logger.info(requestLog, 'request');
     }
   });
   next();
