@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+curl -i http://localhost:8081/healthapiVersion: apps/v1
 kind: Deployment
 metadata:
   name: devops-task

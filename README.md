@@ -84,8 +84,10 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/late
 kubectl -n kube-system patch deployment metrics-server --type=json \
   -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
 
-# optional secret (never committed to git)
-kubectl create secret generic devops-task-secret --from-literal=EXAMPLE_API_KEY=changeme
+# optional secret (enter the value silently; never commit it to git)
+read -rsp "EXAMPLE_API_KEY: " EXAMPLE_API_KEY; printf '\n'
+kubectl create secret generic devops-task-secret --from-literal="EXAMPLE_API_KEY=$EXAMPLE_API_KEY"
+unset EXAMPLE_API_KEY
 
 kubectl apply -f k8s/
 kubectl rollout status deployment/devops-task
@@ -94,24 +96,40 @@ kubectl port-forward svc/devops-task 8081:80      # port-forward alternative to 
 
 ### Zero-downtime rolling update and rollback
 
-Terminal 1 – constant traffic:
+The probe sends 200 requests through the Kubernetes Service while the Deployment updates. `maxUnavailable: 0` keeps old pods available until replacements pass readiness checks.
+
 ```bash
-while true; do curl -s -o /dev/null -w "%{http_code} " localhost:8081/; sleep 0.2; done
-```
-Terminal 2:
-```bash
+kubectl delete pod rollout-probe --ignore-not-found
+kubectl run rollout-probe --image=curlimages/curl:8.10.1 --restart=Never --command -- sh -c '
+i=0
+failures=0
+while [ "$i" -lt 200 ]; do
+  code=$(curl -sS --max-time 2 -o /dev/null -w "%{http_code}" http://devops-task/health 2>/dev/null || printf "000")
+  if [ "$code" != "200" ]; then echo "failed status=$code"; failures=$((failures+1)); fi
+  i=$((i+1))
+  sleep 0.1
+done
+echo "requests=$i failures=$failures"
+'
+kubectl wait --for=condition=Ready pod/rollout-probe --timeout=90s
 kubectl set image deployment/devops-task app=devops-task:2.0.0
 kubectl rollout status deployment/devops-task
-kubectl rollout history deployment/devops-task
+kubectl logs rollout-probe
 kubectl rollout undo deployment/devops-task
 kubectl rollout status deployment/devops-task
+kubectl get deployment devops-task -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+kubectl delete pod rollout-probe
 ```
-`maxUnavailable: 0` plus the readiness probe means a new pod must be ready before an old pod is removed.
-
-> TODO before submitting: paste the real command output here (and note that port-forward sticks to one pod, so a short break at the moment that pod is replaced is a port-forward effect, not an app problem).
 
 ```
-<paste kubectl output here>
+pod/rollout-probe created
+pod/rollout-probe condition met
+deployment.apps/devops-task image updated
+deployment "devops-task" successfully rolled out
+requests=200 failures=0
+deployment.apps/devops-task rolled back
+deployment "devops-task" successfully rolled out
+devops-task:1.0.0
 ```
 
 ### Secrets in Kubernetes
