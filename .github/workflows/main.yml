@@ -64,4 +64,3 @@ jobs:
             --parameters 'commands=["/opt/app/deploy.sh ${{ needs.build-push.outputs.image }}"]' \
             --query Command.CommandId --output text)
           aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}"
-  "token.actions.githubusercontent.com:sub": "repo:shilemon/care_guide:ref:refs/heads/main"
