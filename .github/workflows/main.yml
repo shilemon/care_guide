@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   packages: write
-  id-token: write
 
 jobs:
   build-push:
@@ -38,24 +37,15 @@ jobs:
 
   deploy:
     needs: build-push
-    # Runs only after you set the repository variable AWS_ROLE_ARN
-    if: ${{ vars.AWS_ROLE_ARN != '' }}
+    # Set AWS_DEPLOY_ENABLED to "true" after configuring the AWS secrets.
+    if: ${{ vars.AWS_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
-      - name: debug vars
-        run: |
-          echo "AWS_ROLE_ARN=${{ vars.AWS_ROLE_ARN }}"
-          echo "AWS_REGION=${{ vars.AWS_REGION }}"
-          echo "EC2_INSTANCE_ID=${{ vars.EC2_INSTANCE_ID }}"
-      - name: Debug OIDC inputs
-        run: |
-          echo "role=${{ vars.AWS_ROLE_ARN }}"
-          echo "region=${{ vars.AWS_REGION }}"
-          echo "instance=${{ vars.EC2_INSTANCE_ID }}"
       - name: Deploy through SSM (deploy.sh smoke-tests and rolls back on failure)
         run: |
           CMD_ID=$(aws ssm send-command \

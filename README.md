@@ -150,7 +150,7 @@ flowchart LR
 - **Multi-stage Dockerfile on Alpine:** stage 1 installs production dependencies, stage 2 copies only the result. Alpine (not distroless) keeps `wget` for a simple `HEALTHCHECK` and a shell for debugging, at the cost of a slightly bigger image than distroless. Base image pinned to `node:20.18.1-alpine3.20`. Runs as the non-root `node` user.
 - **EC2 vs ECS vs EKS:** one small service, so one EC2 instance with Docker is the cheapest and simplest. ECS/EKS only pay off with many services or autoscaling needs.
 - **Tagging:** every image gets the full git SHA (exact traceability) and a version `1.0.<run number>` (readable). `latest` is never used, so a rollback always points to a specific tag.
-- **Secrets:** no secrets in git. CI uses `GITHUB_TOKEN` for GHCR and OIDC for AWS (no access keys). Grafana password from `.env` (git-ignored). Kubernetes secret created by command.
+- **Secrets:** no secrets in git. CI uses `GITHUB_TOKEN` for GHCR and GitHub Actions secrets for AWS deploy credentials. Grafana password from `.env` (git-ignored). Kubernetes secret created by command.
 - **No SSH on EC2:** deploys go through SSM, so the security group only opens port 8080.
 - **Loki labels:** only `service`, `container` and `level`. These have few distinct values. `path` and `status` have many values and would make the index large, so they are not labels; filter them at query time with `| json | path="/error"`.
 - **Single compose file with a profile:** `docker compose up` runs only the app; `--profile monitoring` adds the stack.
@@ -197,16 +197,19 @@ Required GitHub settings (only for the EC2 deploy job):
 
 | Type | Name | Purpose |
 |---|---|---|
-| Variable | `AWS_ROLE_ARN` | IAM role that GitHub assumes with OIDC (deploy job is skipped when empty) |
+| Variable | `AWS_DEPLOY_ENABLED` | Set to `true` to enable the deploy job after configuring credentials |
 | Variable | `AWS_REGION` | AWS region |
 | Variable | `EC2_INSTANCE_ID` | Target instance (Terraform output `instance_id`) |
-| Secret | none | `GITHUB_TOKEN` is provided automatically; no long-lived keys |
+| Secret | `AWS_ACCESS_KEY_ID` | Access key for a dedicated IAM deploy user |
+| Secret | `AWS_SECRET_ACCESS_KEY` | Secret key for that IAM user |
+
+Grant the IAM user only the SSM permissions needed to send the deploy command to this instance and read its command result. Store both keys as repository secrets, then set `AWS_DEPLOY_ENABLED` to `true`. Environment-scoped secrets require adding that environment to the deploy job. These are long-lived credentials, so restrict their permissions and rotate them regularly.
 
 The GHCR package must be public (or the instance needs a pull token) so the instance can pull it.
 
 ## 7. Security considerations
 
-- **Secrets:** none in git; OIDC instead of AWS keys; `.env` ignored; k8s secret created out-of-band.
+- **Secrets:** AWS deploy keys are stored in GitHub Actions secrets, not in git; `.env` ignored; k8s secret created out-of-band. Restrict and rotate the long-lived AWS keys.
 - **Image scanning:** Trivy on every PR, pipeline fails on CRITICAL. Image runs as non-root; k8s uses a read-only root filesystem, dropped capabilities and no privilege escalation.
 - **IAM:** the instance role only has SSM core access and permission to write to its own single log group. No static keys. IMDSv2 required.
 - **Network:** security group opens only 8080, no SSH. Monitoring ports are not published; only Grafana is.
@@ -247,6 +250,3 @@ Estimate only; check with the AWS Pricing Calculator.
   - `![Application](docs/screenshots/application.png)`
   - `![Host](docs/screenshots/host.png)`
   - `![Containers](docs/screenshots/containers.png)`
-# oidc deploy test
-# trigger workflow after vars
-# rerun workflow after OIDC fix

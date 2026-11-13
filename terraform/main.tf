@@ -47,7 +47,7 @@ resource "aws_cloudwatch_log_group" "app" {
   retention_in_days = var.log_retention_days
 }
 
-# IAM: least privilege, no access keys
+# EC2 IAM role: SSM access and least-privilege log writing, no instance access keys.
 data "aws_iam_policy_document" "assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -110,34 +110,3 @@ resource "aws_instance" "app" {
     Environment = var.environment
   }
 }
-
-data "aws_iam_policy_document" "github_actions_assume_role" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    principals {
-      type        = "Federated"
-      identifiers = ["arn:aws:iam::053650399216:oidc-provider/token.actions.githubusercontent.com"]
-    }
-
-    conditions {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:YOUR_REAL_OWNER/YOUR_REAL_REPO:ref:refs/heads/main"]
-    }
-
-    conditions {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "github_actions" {
-  name               = "${local.name}-github-actions-role"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
-}
-
-AWS_ROLE_ARN = arn:aws:iam::053650399216:role/github-actions-deploy
-AWS_REGION = ap-southeast-2
-EC2_INSTANCE_ID = i-070dc93a570869cbb
