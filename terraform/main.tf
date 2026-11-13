@@ -1,22 +1,5 @@
 provider "aws" {
   region = var.region
-
-  # Only used for local testing with LocalStack (no AWS account needed)
-  access_key                  = var.use_localstack ? "test" : null
-  secret_key                  = var.use_localstack ? "test" : null
-  skip_credentials_validation = var.use_localstack
-  skip_metadata_api_check     = var.use_localstack
-  skip_requesting_account_id  = var.use_localstack
-
-  dynamic "endpoints" {
-    for_each = var.use_localstack ? [1] : []
-    content {
-      ec2  = "http://localhost:4566"
-      iam  = "http://localhost:4566"
-      logs = "http://localhost:4566"
-      sts  = "http://localhost:4566"
-    }
-  }
 }
 
 data "aws_vpc" "default" {
@@ -24,7 +7,6 @@ data "aws_vpc" "default" {
 }
 
 data "aws_ami" "al2023" {
-  count       = var.ami_id == "" ? 1 : 0
   most_recent = true
   owners      = ["amazon"]
   filter {
@@ -35,7 +17,7 @@ data "aws_ami" "al2023" {
 
 locals {
   name = "devops-task-${var.environment}"
-  ami  = var.ami_id != "" ? var.ami_id : data.aws_ami.al2023[0].id
+  ami  = data.aws_ami.al2023.id
 }
 
 # Only the app port is open. No SSH: we use SSM instead.
@@ -128,3 +110,34 @@ resource "aws_instance" "app" {
     Environment = var.environment
   }
 }
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = ["arn:aws:iam::053650399216:oidc-provider/token.actions.githubusercontent.com"]
+    }
+
+    conditions {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:YOUR_REAL_OWNER/YOUR_REAL_REPO:ref:refs/heads/main"]
+    }
+
+    conditions {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions" {
+  name               = "${local.name}-github-actions-role"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
+}
+
+AWS_ROLE_ARN = arn:aws:iam::053650399216:role/github-actions-deploy
+AWS_REGION = ap-southeast-2
+EC2_INSTANCE_ID = i-070dc93a570869cbb

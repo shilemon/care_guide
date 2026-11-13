@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   packages: write
-  id-token: write      # needed for AWS OIDC
+  id-token: write
 
 jobs:
   build-push:
@@ -46,6 +46,16 @@ jobs:
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+      - name: debug vars
+        run: |
+          echo "AWS_ROLE_ARN=${{ vars.AWS_ROLE_ARN }}"
+          echo "AWS_REGION=${{ vars.AWS_REGION }}"
+          echo "EC2_INSTANCE_ID=${{ vars.EC2_INSTANCE_ID }}"
+      - name: Debug OIDC inputs
+        run: |
+          echo "role=${{ vars.AWS_ROLE_ARN }}"
+          echo "region=${{ vars.AWS_REGION }}"
+          echo "instance=${{ vars.EC2_INSTANCE_ID }}"
       - name: Deploy through SSM (deploy.sh smoke-tests and rolls back on failure)
         run: |
           CMD_ID=$(aws ssm send-command \
@@ -54,3 +64,4 @@ jobs:
             --parameters 'commands=["/opt/app/deploy.sh ${{ needs.build-push.outputs.image }}"]' \
             --query Command.CommandId --output text)
           aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}"
+  "token.actions.githubusercontent.com:sub": "repo:shilemon/care_guide:ref:refs/heads/main"

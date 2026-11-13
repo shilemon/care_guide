@@ -1,0 +1,10 @@
+Fri Nov 13 03:40:47 PM +06 2026
+{
+    "UserId": "AIDAQY7OQD7YIDZXRMQTO",
+    "Account": "<ACCOUNT_ID>",
+    "Arn": "arn:aws:iam::<ACCOUNT_ID>:user/emon-admin"
+}
+
+aws: [ERROR]: An error occurred (UnauthorizedOperation) when calling the DescribeVpcs operation: You are not authorized to perform this operation. User: arn:aws:iam::<ACCOUNT_ID>:user/emon-admin is not authorized to perform: ec2:DescribeVpcs with an explicit deny in a service control policy: arn:aws:organizations::<ORG_ID>:policy/o-raqxk5b5ix/service_control_policy/p-92to8am0
+
+aws: [ERROR]: An error occurred (AccessDenied) when calling the ListBuckets operation: User: arn:aws:iam::<ACCOUNT_ID>:user/emon-admin is not authorized to perform: s3:ListAllMyBuckets with an explicit deny in a service control policy: arn:aws:organizations::<ORG_ID>:policy/o-raqxk5b5ix/service_control_policy/p-92to8am0

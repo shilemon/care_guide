@@ -1,6 +1,6 @@
 variable "region" {
   type    = string
-  default = "us-east-1"
+  default = "ap-southeast-2"
 }
 
 variable "environment" {
@@ -23,14 +23,4 @@ variable "log_retention_days" {
   default = 14
 }
 
-variable "ami_id" {
-  description = "Leave empty to use the latest Amazon Linux 2023 AMI"
-  type        = string
-  default     = ""
-}
 
-variable "use_localstack" {
-  description = "true = talk to LocalStack on localhost:4566 instead of real AWS"
-  type        = bool
-  default     = false
-}

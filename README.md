@@ -249,3 +249,4 @@ Estimate only; check with the AWS Pricing Calculator.
   - `![Containers](docs/screenshots/containers.png)`
 # oidc deploy test
 # trigger workflow after vars
+# rerun workflow after OIDC fix
