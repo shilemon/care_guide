@@ -1,0 +1,52 @@
+name: PR checks
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test            # also prints the coverage report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: app/coverage
+
+  lint-files:
+    name: Dockerfile and shell lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/Dockerfile
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+
+  scan:
+    name: Build and scan image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t devops-task:pr app
+      - name: Trivy scan (fails on CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: devops-task:pr
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true

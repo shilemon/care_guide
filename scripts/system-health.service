@@ -1,0 +1,9 @@
+[Unit]
+Description=Run system_health.sh
+
+[Service]
+Type=oneshot
+Environment=LOG_FILE=/var/log/health_log.txt
+ExecStart=/opt/scripts/system_health.sh
+# exit code 1 (warning) and 2 (critical) are expected results, not service failures
+SuccessExitStatus=1 2

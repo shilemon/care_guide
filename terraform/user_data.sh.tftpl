@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euxo pipefail
+
+dnf install -y docker
+systemctl enable --now docker
+
+mkdir -p /opt/app
+
+# Send container logs to CloudWatch Logs
+echo "--log-driver=awslogs --log-opt awslogs-region=${region} --log-opt awslogs-group=${log_group}" > /opt/app/extra_args
+
+# Same deploy script that GitHub Actions uses later
+cat > /opt/app/deploy.sh <<'DEPLOY_EOF'
+${deploy_script}
+DEPLOY_EOF
+chmod +x /opt/app/deploy.sh
+
+# First start of the app
+/opt/app/deploy.sh ${image}

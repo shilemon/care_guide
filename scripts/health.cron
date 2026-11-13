@@ -1,0 +1,2 @@
+# Alternative to systemd: run every 5 minutes
+*/5 * * * * LOG_FILE=/var/log/health_log.txt /opt/scripts/system_health.sh >/dev/null 2>&1
