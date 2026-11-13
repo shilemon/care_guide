@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+.env
+health_log.txt*
+*.tfstate
+*.tfstate.*
+.terraform/
+*.plan
