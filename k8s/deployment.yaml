@@ -35,7 +35,7 @@ spec:
                 name: devops-task-config
             - secretRef:
                 name: devops-task-secret
-                optional: true   # created with kubectl, never committed
+                optional: true   
           resources:
             requests:
               cpu: 50m

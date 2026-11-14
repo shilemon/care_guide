@@ -1,11 +1,11 @@
-# ---------- Stage 1: build (install production dependencies) ----------
+# ---------- Stage 1 ----------
 FROM node:20.18.1-alpine3.20 AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY src ./src
 
-# ---------- Stage 2: final small runtime image ----------
+# ---------- Stage 2 ----------
 FROM node:20.18.1-alpine3.20
 ARG APP_VERSION=1.0.0
 

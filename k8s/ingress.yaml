@@ -1,4 +1,3 @@
-# Optional: needs an ingress controller (e.g. ingress-nginx).
 # Without one, use: kubectl port-forward svc/devops-task 8081:80
 apiVersion: networking.k8s.io/v1
 kind: Ingress
